@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-celeste: #20AACE;
+  --color-azul: #1E5870;
+  --color-crema: #E9EEEA;
+  --color-blanco: #FFFFFF;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-md border border-gray-300 bg-crema text-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-celeste;
+  }
+
+  .btn-primary {
+    @apply bg-celeste text-white font-medium rounded-md py-2 px-4 hover:opacity-90 transition;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 font-medium rounded-md py-2 px-4 hover:bg-gray-200 transition;
+  }
+}
+
+
+.root {
+  background-color: #E9EEEA;
+}
