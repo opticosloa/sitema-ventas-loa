@@ -68,8 +68,3 @@ export default tseslint.config([
 ])
 ```
 # sistema-ventas
-# sitema-ventas
-# sistema-ventas
-# sistema-ventas
-# sitema-ventas-loa
-# sitema-ventas-loa

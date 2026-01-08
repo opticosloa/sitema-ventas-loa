@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { Navbar, ConsultaStock, ConsultaCliente, TicketList, TicketsHistorial, Estadisticas, ListaEmpleados } from '../ventas/components';
+import { Navbar, ConsultaStock, ConsultaCliente, TicketList, TicketsHistorial, Estadisticas, ListaEmpleados, Home } from '../ventas/components';
 import { LoginPage, NotFoundPage, PagoResultadoPage, UnAuthorized } from '../ventas/page';
 import { HomePage, EmpleadoHomePage, TallerHomePage } from '../page';
 import { AuthGuard, RoleGuard, TenantGuard } from '../auth/guards';
@@ -62,6 +62,7 @@ export const AppRouter = () => {
           <Route path="/pago-resultado" element={<PagoResultadoPage />} />
         </Route>
 
+        <Route path='/' element={<Home />} />
         <Route path="*" element={<NotFoundPage />} />
 
       </Routes>
