@@ -13,6 +13,7 @@ import { OpticSection } from "./components/OpticSection";
 import { MultifocalForm } from "./components/MultifocalForm";
 import { FrameSection } from "./components/FrameSection";
 import { SalesItemsList, type CartItem } from "./components/SalesItemsList";
+import { SupervisorAuthModal } from "../components/modals/SupervisorAuthModal";
 
 const initialForm: FormValues = {
   clienteName: "",
@@ -80,6 +81,11 @@ export const FormularioVenta: React.FC = () => {
   // Debajo de const [armazonPrecio, setArmazonPrecio] = useState(0);
   const [cristalesPrecio, setCristalesPrecio] = useState(0);
 
+  // Discount State
+  const [discount, setDiscount] = useState(0);
+  const [isDiscountAuthorized, setIsDiscountAuthorized] = useState(false);
+  const [showSupervisorModal, setShowSupervisorModal] = useState(false);
+
   // Actualizá el useMemo del total
   const totalVenta = React.useMemo(() => {
     const retailTotal = cart.reduce((acc, item) => {
@@ -88,9 +94,9 @@ export const FormularioVenta: React.FC = () => {
     }, 0);
     const frameTotal = formState.armazon ? armazonPrecio : 0;
 
-    // SUMAMOS CRISTALES
-    return retailTotal + frameTotal + cristalesPrecio;
-  }, [cart, armazonPrecio, formState.armazon, cristalesPrecio]);
+    // SUMAMOS CRISTALES y RESTAMOS DESCUENTO
+    return retailTotal + frameTotal + cristalesPrecio - (isDiscountAuthorized ? discount : 0);
+  }, [cart, armazonPrecio, formState.armazon, cristalesPrecio, discount, isDiscountAuthorized]);
 
   const navigate = useNavigate();
 
@@ -511,6 +517,7 @@ export const FormularioVenta: React.FC = () => {
           multifocal,
           observaciones: Observacion || null,
           image_url: imageUrl,
+          descuento: isDiscountAuthorized ? discount : 0
         };
 
         const res = await LOAApi.post('/api/prescriptions', payload);
@@ -520,7 +527,8 @@ export const FormularioVenta: React.FC = () => {
         // Direct Sale Only
         const salePayload = {
           cliente_id: finalClienteId,
-          urgente: false
+          urgente: false,
+          descuento: isDiscountAuthorized ? discount : 0
         };
         const saleRes = await LOAApi.post('/api/sales', salePayload);
         ventaId = saleRes.data.venta_id;
@@ -672,6 +680,53 @@ export const FormularioVenta: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* SECTION: DISCOUNT & TOTAL (Shared) */}
+        <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 mt-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-white font-bold">Descuento ($):</label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number"
+                  min="0"
+                  disabled={!isDiscountAuthorized}
+                  className={`input w-32 text-right ${!isDiscountAuthorized ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  placeholder="0.00"
+                  value={discount || ''}
+                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                />
+                {!isDiscountAuthorized ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSupervisorModal(true)}
+                    className="btn-warning text-xs py-1 px-2"
+                  >
+                    🔓 Autorizar
+                  </button>
+                ) : (
+                  <span className="text-green-400 text-xs font-bold border border-green-500 px-2 py-1 rounded">
+                    ✅ Autorizado
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <span className="text-xl text-white font-bold">Total a Pagar: </span>
+              <span className="text-2xl text-celeste font-bold">${totalVenta.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <SupervisorAuthModal
+          isOpen={showSupervisorModal}
+          onClose={() => setShowSupervisorModal(false)}
+          onSuccess={(name) => {
+            setIsDiscountAuthorized(true);
+            alert(`Descuento autorizado por: ${name}`);
+          }}
+          actionName="Aplicar Descuento a Venta"
+        />
 
         <div className={activeTab === 'retail' ? 'block' : 'hidden'}>
           <SalesItemsList items={cart} onItemsChange={setCart} />

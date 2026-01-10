@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import LOAApi from '../../api/LOAApi';
+import { useAuthStore } from '../../hooks';
+import { SupervisorAuthModal } from '../../components/modals/SupervisorAuthModal';
 
 
 export const DevolucionesPage: React.FC = () => {
@@ -8,6 +10,9 @@ export const DevolucionesPage: React.FC = () => {
     const [items, setItems] = useState<any[]>([]);
     const [selectedItems, setSelectedItems] = useState<Record<string, number>>({}); // index -> qty to return
     const [loading, setLoading] = useState(false);
+    const [isSupervisorModalOpen, setIsSupervisorModalOpen] = useState(false);
+
+    const { role } = useAuthStore();
 
 
     const handleSearch = async () => {
@@ -87,16 +92,13 @@ export const DevolucionesPage: React.FC = () => {
         }
     };
 
-    const handleSubmit = async () => {
-        const keys = Object.keys(selectedItems);
-        if (keys.length === 0) return alert("Seleccione items para devolver");
-
+    const processReturn = async () => {
         if (!window.confirm("¿Confirmar devolución? Esto anulará los items y generará el movimiento de stock.")) return;
 
         setLoading(true);
         try {
             // Payload: items = [{ producto_id, cantidad }]
-            const itemsPayload = keys.map(k => ({
+            const itemsPayload = Object.keys(selectedItems).map(k => ({
                 producto_id: items[parseInt(k)].producto_id,
                 cantidad: selectedItems[k]
             }));
@@ -118,6 +120,18 @@ export const DevolucionesPage: React.FC = () => {
             alert("Error procesando devolución");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        const keys = Object.keys(selectedItems);
+        if (keys.length === 0) return alert("Seleccione items para devolver");
+
+        // Check if user is Admin/SuperAdmin
+        if (role === 'ADMIN' || role === 'SUPERADMIN') {
+            processReturn();
+        } else {
+            setIsSupervisorModalOpen(true);
         }
     };
 
@@ -205,6 +219,17 @@ export const DevolucionesPage: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Supervisor Modal */}
+            <SupervisorAuthModal
+                isOpen={isSupervisorModalOpen}
+                onClose={() => setIsSupervisorModalOpen(false)}
+                onSuccess={(name) => {
+                    // Logic to proceed after auth
+                    // We can also add a toast or alert saying "Authorized by {name}" if needed
+                    processReturn();
+                }}
+                actionName="Autorizar Devolución"
+            />
         </div>
     );
 };
