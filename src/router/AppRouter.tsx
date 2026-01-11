@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { Navbar, ConsultaStock, ConsultaCliente, TicketList, TicketsHistorial, Estadisticas, ListaEmpleados, Home, HistorialPrescripciones } from '../ventas/components';
+import { Navbar, ConsultaStock, ConsultaCliente, TicketList, TicketsHistorial, Estadisticas, ListaEmpleados, Home, HistorialPrescripciones, ListaTicketsTaller } from '../ventas/components';
 import { LoginPage, NotFoundPage, PagoResultadoPage, UnAuthorized, DevolucionesPage } from '../ventas/page';
 
 import { HomePage, EmpleadoHomePage, TallerHomePage } from '../page';
@@ -58,7 +58,7 @@ export const AppRouter = () => {
             {/* TALLER */}
             <Route element={<RoleGuard allowedRoles={['ADMIN', 'SUPERADMIN', 'TALLER']} />}>
               <Route path="/taller" element={<TallerHomePage />}>
-                <Route path="lista" element={<TicketList />} />
+                <Route path="lista" element={<ListaTicketsTaller />} />
                 <Route path="historial" element={<TicketsHistorial />} />
                 <Route path="stock" element={<ConsultaStock />} />
               </Route>

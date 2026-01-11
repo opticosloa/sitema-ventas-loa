@@ -12,6 +12,7 @@ export * from './Navbar';
 export * from './SideBar';
 export * from './TicketList';
 export * from './TicketModal';
+export * from './ListaTicketsTaller';
 export * from './TicketsHistorial';
 export * from './UserWidget';
 export * from './HistorialPrescripciones';
