@@ -16,9 +16,9 @@ export const Dashboard = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           <button
             className="bg-gray-100 border border-gray-300 shadow-sm rounded-lg h-28 flex items-center justify-center text-lg font-medium hover:bg-crema hover:opacity-90 transition"
-            onClick={() => navigate("/admin/historial")}
+            onClick={() => navigate("/admin/nueva-venta")}
           >
-            Historial de tickets
+            Nueva venta
           </button>
 
           <button
@@ -66,16 +66,16 @@ export const Dashboard = () => {
           {role === 'SUPERADMIN' && (
             <>
               <button
-                className="bg-gray-100 border-2 border-purple-300 shadow-sm rounded-lg h-28 flex items-center justify-center text-lg font-medium hover:bg-purple-100/50 hover:opacity-90 transition"
+                className="bg-gray-100 border border-gray-300 shadow-sm rounded-lg h-28 flex items-center justify-center text-lg font-medium hover:bg-crema hover:opacity-90 transition"
                 onClick={() => navigate("/admin/productos/nuevo")}
               >
-                📦 Alta Producto
+                Alta Producto
               </button>
               <button
-                className="bg-gray-100 border-2 border-purple-300 shadow-sm rounded-lg h-28 flex items-center justify-center text-lg font-medium hover:bg-purple-100/50 hover:opacity-90 transition"
+                className="bg-gray-100 border border-gray-300 shadow-sm rounded-lg h-28 flex items-center justify-center text-lg font-medium hover:bg-crema hover:opacity-90 transition"
                 onClick={() => navigate("/admin/cristales/nuevo")}
               >
-                👁️ Alta Cristal
+                Alta Cristal
               </button>
             </>
           )}

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-// import { useUiStore } from '../../hooks';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { Empleado } from '../../types/Empleado';
 import LOAApi from '../../api/LOAApi';
@@ -18,8 +17,9 @@ export const ListaEmpleados: React.FC = () => {
   const { data: empleados = [], isSuccess } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data } = await LOAApi.get<{ success: boolean; result: Empleado[] }>('/api/users');
-      return data.success && Array.isArray(data.result) ? data.result : [];
+      const { data } = await LOAApi.get<{ success: boolean; result: any }>('/api/users');
+      const listaEmpleados = data.result?.rows || data.result;
+      return Array.isArray(listaEmpleados) ? listaEmpleados : [];
     }
   });
 
@@ -37,7 +37,7 @@ export const ListaEmpleados: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setShowForm(false);
       setNewEmpleado({
-        empleado_id: 0,
+        usuario_id: 0,
         nombre: '',
         apellido: '',
         cuit: 0,
@@ -70,7 +70,7 @@ export const ListaEmpleados: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [newEmpleado, setNewEmpleado] = useState<Empleado>({
-    empleado_id: 0,
+    usuario_id: 0,
     nombre: '',
     apellido: '',
     cuit: 0,
@@ -194,7 +194,7 @@ export const ListaEmpleados: React.FC = () => {
       {/* Mobile: cards */}
       <div className="grid gap-4 md:hidden">
         {pageItems.map(emp => (
-          <article key={emp.empleado_id} role="button" tabIndex={0}
+          <article key={emp.usuario_id} role="button" tabIndex={0}
             onKeyDown={(e) => onKeyActivate(e, emp)}
             onClick={() => openModal(emp)}
             className="bg-white rounded-lg p-3 shadow-sm border hover:shadow-md focus:outline-none focus:ring-2 focus:ring-celeste cursor-pointer"
@@ -242,7 +242,7 @@ export const ListaEmpleados: React.FC = () => {
 
           <tbody>
             {pageItems.map(emp => (
-              <tr key={emp.empleado_id} className="hover:bg-amber-50 focus-within:bg-amber-50">
+              <tr key={emp.usuario_id} className="hover:bg-amber-50 focus-within:bg-amber-50">
                 <td className="px-4 py-3 text-sm truncate max-w-xs">
                   <button onClick={() => openModal(emp)} className="text-left w-full text-sm">
                     <div className="font-medium truncate">{emp.nombre} {emp.apellido}</div>
@@ -269,7 +269,7 @@ export const ListaEmpleados: React.FC = () => {
 
                     <div className="ml-auto flex gap-2">
                       <button onClick={() => openModal(emp)} className="text-azul underline">Ver</button>
-                      <button onClick={() => console.log("Editar", emp.empleado_id)} className="text-celeste">Editar</button>
+                      <button onClick={() => console.log("Editar", emp.usuario_id)} className="text-celeste">Editar</button>
                     </div>
                   </div>
                 </td>
@@ -325,8 +325,8 @@ export const ListaEmpleados: React.FC = () => {
                   <div className="text-sm"><strong>Cuenta Corriente:</strong> {formatCurrency(selected.cuenta_corriente)}</div>
 
                   <div className="flex gap-2 mt-3">
-                    <button className="btn-primary" onClick={() => console.log("Editar empleado", selected.empleado_id)}>Editar</button>
-                    <button className="btn-secondary" onClick={() => console.log("Historial", selected.empleado_id)}>Historial</button>
+                    <button className="btn-primary" onClick={() => console.log("Editar empleado", selected.usuario_id)}>Editar</button>
+                    <button className="btn-secondary" onClick={() => console.log("Historial", selected.usuario_id)}>Historial</button>
                   </div>
                 </div>
               </div>

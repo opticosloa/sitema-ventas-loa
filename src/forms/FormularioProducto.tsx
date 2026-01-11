@@ -31,7 +31,9 @@ export const FormularioProducto: React.FC = () => {
     const [form, setForm] = useState<ProductForm>(initialForm);
     const [loading, setLoading] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
 
@@ -58,144 +60,155 @@ export const FormularioProducto: React.FC = () => {
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-6 bg-gray-900 rounded-xl shadow-xl mt-10 border border-gray-700">
-            <h2 className="text-2xl font-bold text-white mb-6">Alta de Producto</h2>
+        <div className="w-full max-w-5xl mx-auto p-4 fade-in">
+            <section className="bg-opacity-10 border border-blanco rounded-xl p-4">
+                <h2 className="text-blanco text-2xl font-semibold mb-4">
+                    Alta de Producto
+                </h2>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                    {/* Nombre */}
+                    <div className="md:col-span-2">
+                        <label className="text-sm text-blanco">Nombre *</label>
+                        <input
+                            required
+                            name="nombre"
+                            value={form.nombre}
+                            onChange={handleChange}
+                            className="input w-full"
+                            placeholder="Nombre del producto"
+                        />
+                    </div>
 
-                {/* Nombre */}
-                <div className="md:col-span-2">
-                    <label className="block text-gray-400 text-sm mb-1">Nombre *</label>
-                    <input
-                        required
-                        name="nombre"
-                        value={form.nombre}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                        placeholder="Nombre del producto"
-                    />
-                </div>
+                    {/* Descripción */}
+                    <div className="md:col-span-2">
+                        <label className="text-sm text-blanco">Descripción</label>
+                        <textarea
+                            name="descripcion"
+                            value={form.descripcion}
+                            onChange={handleChange}
+                            rows={3}
+                            className="input w-full"
+                            placeholder="Detalles del producto"
+                        />
+                    </div>
 
-                {/* Descripcion */}
-                <div className="md:col-span-2">
-                    <label className="block text-gray-400 text-sm mb-1">Descripción</label>
-                    <textarea
-                        name="descripcion"
-                        value={form.descripcion}
-                        onChange={handleChange}
-                        rows={3}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                        placeholder="Detalles del producto..."
-                    />
-                </div>
+                    {/* Tipo */}
+                    <div>
+                        <label className="text-sm text-blanco">Tipo</label>
+                        <select
+                            name="tipo"
+                            value={form.tipo}
+                            onChange={handleChange}
+                            className="input w-full"
+                        >
+                            <option value="ARMAZON">Armazón</option>
+                            <option value="LIQUIDO">Líquido</option>
+                            <option value="ACCESORIO">Accesorio</option>
+                        </select>
+                    </div>
 
-                {/* Tipo */}
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Tipo</label>
-                    <select
-                        name="tipo"
-                        value={form.tipo}
-                        onChange={handleChange}
-                    >
-                        <option value="ARMAZON">Armazón</option>
-                        <option value="LIQUIDO">Líquido</option>
-                        <option value="ACCESORIO">Accesorio</option>
-                    </select>
-                </div>
+                    {/* Ubicación */}
+                    <div>
+                        <label className="text-sm text-blanco">Ubicación</label>
+                        <input
+                            name="ubicacion"
+                            value={form.ubicacion}
+                            onChange={handleChange}
+                            className="input w-full"
+                            placeholder="Ej: A1"
+                        />
+                    </div>
 
-                {/* Ubicacion */}
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Ubicación</label>
-                    <input
-                        name="ubicacion"
-                        value={form.ubicacion}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                        placeholder="Estante A1..."
-                    />
-                </div>
+                    {/* Precios */}
+                    <div>
+                        <label className="text-sm text-blanco">Precio Costo</label>
+                        <input
+                            type="number"
+                            name="precio_costo"
+                            value={form.precio_costo}
+                            onChange={handleChange}
+                            className="input w-full"
+                        />
+                    </div>
 
-                {/* Precios */}
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Precio Costo</label>
-                    <input
-                        type="number"
-                        name="precio_costo"
-                        value={form.precio_costo}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Precio Venta</label>
-                    <input
-                        type="number"
-                        name="precio_venta"
-                        value={form.precio_venta}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                    />
-                </div>
+                    <div>
+                        <label className="text-sm text-blanco">Precio Venta</label>
+                        <input
+                            type="number"
+                            name="precio_venta"
+                            value={form.precio_venta}
+                            onChange={handleChange}
+                            className="input w-full"
+                        />
+                    </div>
 
-                {/* Stock */}
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Stock Inicial</label>
-                    <input
-                        type="number"
-                        name="stock"
-                        value={form.stock}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                    />
-                </div>
-                <div>
-                    <label className="block text-gray-400 text-sm mb-1">Stock Mínimo</label>
-                    <input
-                        type="number"
-                        name="stock_minimo"
-                        value={form.stock_minimo}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                    />
-                </div>
+                    {/* Stock */}
+                    <div>
+                        <label className="text-sm text-blanco">Stock Inicial</label>
+                        <input
+                            type="number"
+                            name="stock"
+                            value={form.stock}
+                            onChange={handleChange}
+                            className="input w-full"
+                        />
+                    </div>
 
-                {/* QR */}
-                <div className="md:col-span-2">
-                    <label className="block text-gray-400 text-sm mb-1">Código QR (Opcional)</label>
-                    <input
-                        name="codigo_qr"
-                        value={form.codigo_qr}
-                        onChange={handleChange}
-                        className="input w-full bg-gray-800 border-gray-600 focus:border-celeste"
-                        placeholder="Dejar vacío para autogenerar con ID"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Si no se ingresa, se usará el ID del producto.</p>
-                </div>
+                    <div>
+                        <label className="text-sm text-blanco">Stock Mínimo</label>
+                        <input
+                            type="number"
+                            name="stock_minimo"
+                            value={form.stock_minimo}
+                            onChange={handleChange}
+                            className="input w-full"
+                        />
+                    </div>
 
-                {/* Active */}
-                <div className="md:col-span-2 flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        name="is_active"
-                        checked={form.is_active}
-                        onChange={handleChange}
-                        className="w-5 h-5 accent-celeste bg-gray-700 border-gray-600 rounded"
-                    />
-                    <label className="text-gray-300">Producto Activo</label>
-                </div>
+                    {/* QR */}
+                    <div className="md:col-span-2">
+                        <label className="text-sm text-blanco">Código QR</label>
+                        <input
+                            name="codigo_qr"
+                            value={form.codigo_qr}
+                            onChange={handleChange}
+                            className="input w-full"
+                            placeholder="Vacío para autogenerar"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                            Si no se ingresa, se usará el ID del producto
+                        </p>
+                    </div>
 
-                {/* Submit */}
-                <div className="md:col-span-2 flex justify-end mt-4">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary"
-                    >
-                        {loading ? 'Guardando...' : 'Crear Producto'}
-                    </button>
-                </div>
+                    {/* Activo */}
+                    <div className="md:col-span-2 flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            name="is_active"
+                            checked={form.is_active}
+                            onChange={handleChange}
+                            className="accent-celeste w-5 h-5"
+                        />
+                        <span className="text-blanco">Producto activo</span>
+                    </div>
 
-            </form >
-        </div >
+                    {/* Submit */}
+                    <div className="md:col-span-2 flex justify-end mt-2">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary"
+                        >
+                            {loading ? 'Guardando...' : 'Crear Producto'}
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
     );
 };
+

@@ -5,7 +5,7 @@ interface OpticSectionProps {
     title: string;
     prefix: 'lejos' | 'cerca';
     formState: FormValues;
-    formErrors: Record<string, string>; // Ahora sí la vamos a usar
+    formErrors: Record<string, string>;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
     stockStatus: { OD: any; OI: any };
     availableCrystals: any[];
@@ -21,71 +21,54 @@ export const OpticSection: React.FC<OpticSectionProps> = ({
     availableCrystals = []
 }) => {
 
-    // Helper para obtener valores del state
     const getVal = (field: string) => formState[`${prefix}_${field}` as keyof FormValues];
 
-    // Helper para obtener clases CSS (USA formErrors AQUÍ)
-    // Si existe un error en 'lejos_OD_Esf', devuelve la clase con borde rojo
     const getInputClass = (field: string, centerText: boolean = false) => {
         const fieldName = `${prefix}_${field}`;
         const hasError = !!formErrors[fieldName];
-        const baseClass = "input w-full";
+        // Estilo unificado: Fondo claro, texto oscuro, bordes redondeados suaves
+        const baseClass = "w-full bg-slate-100 text-slate-900 rounded-md py-1.5 px-3 border-none focus:ring-2 focus:ring-cyan-500 transition-all";
         const alignClass = centerText ? "text-center" : "";
-        const errorClass = hasError ? "border-red-500 focus:ring-red-500 text-red-400" : "";
+        const errorClass = hasError ? "ring-2 ring-red-500" : "";
 
         return `${baseClass} ${alignClass} ${errorClass}`.trim();
     };
 
-    // Determina si hay stock visualmente
     const hasStockOD = !!stockStatus.OD;
     const hasStockOI = !!stockStatus.OI;
 
     return (
-        <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 mb-4">
-            <h3 className="text-xl text-celeste font-semibold mb-3 border-b border-gray-600 pb-2">
-                {title} {hasStockOD && hasStockOI && <span className="text-xs text-green-400 ml-2">✓ Stock Disponible</span>}
+        <div className="backdrop-blur-sm p-5 rounded-xl border border-white mb-6">
+            <h3 className="text-xl text-cyan-400 font-bold mb-4 flex items-center">
+                {title}
+                {hasStockOD && hasStockOI && (
+                    <span className="text-xs bg-green-500/20 text-green-400 ml-3 px-2 py-1 rounded-full border border-green-500/30">
+                        ✓ Stock Disponible
+                    </span>
+                )}
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* OJO DERECHO */}
-                <div className="bg-gray-900 p-3 rounded border border-gray-700">
-                    <h4 className="text-white font-bold mb-2 text-center">Ojo Derecho (OD)</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div>
-                            <label className="text-xs text-gray-400">Esfera</label>
-                            <input
-                                type="number" step="0.25"
-                                name={`${prefix}_OD_Esf`}
-                                value={getVal('OD_Esf') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OD_Esf', true)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400">Cilindro</label>
-                            <input
-                                type="number" step="0.25"
-                                name={`${prefix}_OD_Cil`}
-                                value={getVal('OD_Cil') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OD_Cil', true)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400">Eje</label>
-                            <input
-                                type="number"
-                                name={`${prefix}_OD_Eje`}
-                                value={getVal('OD_Eje') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OD_Eje', true)}
-                            />
-                        </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <h4 className="text-cyan-100/80 text-sm font-semibold mb-3 uppercase tracking-wider text-center">Ojo Derecho (OD)</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                        {['Esf', 'Cil', 'Eje'].map((label) => (
+                            <div key={label}>
+                                <label className="text-xs text-white/70 mb-1 block">{label}</label>
+                                <input
+                                    type="number" step="0.25"
+                                    name={`${prefix}_OD_${label}`}
+                                    value={getVal(`OD_${label}`) || ''}
+                                    onChange={onInputChange}
+                                    className={getInputClass(`OD_${label}`, true)}
+                                />
+                            </div>
+                        ))}
                     </div>
-                    {/* Campo Add solo para Lejos (opcional según tu lógica de negocio) */}
                     {prefix === 'lejos' && (
-                        <div className="mt-2">
-                            <label className="text-xs text-gray-400">Add</label>
+                        <div className="mt-3">
+                            <label className="text-xs text-white/70 mb-1 block">Add</label>
                             <input
                                 type="number" step="0.25"
                                 name={`${prefix}_OD_Add`}
@@ -98,43 +81,25 @@ export const OpticSection: React.FC<OpticSectionProps> = ({
                 </div>
 
                 {/* OJO IZQUIERDO */}
-                <div className="bg-gray-900 p-3 rounded border border-gray-700">
-                    <h4 className="text-white font-bold mb-2 text-center">Ojo Izquierdo (OI)</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div>
-                            <label className="text-xs text-gray-400">Esfera</label>
-                            <input
-                                type="number" step="0.25"
-                                name={`${prefix}_OI_Esf`}
-                                value={getVal('OI_Esf') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OI_Esf', true)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400">Cilindro</label>
-                            <input
-                                type="number" step="0.25"
-                                name={`${prefix}_OI_Cil`}
-                                value={getVal('OI_Cil') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OI_Cil', true)}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400">Eje</label>
-                            <input
-                                type="number"
-                                name={`${prefix}_OI_Eje`}
-                                value={getVal('OI_Eje') || ''}
-                                onChange={onInputChange}
-                                className={getInputClass('OI_Eje', true)}
-                            />
-                        </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <h4 className="text-cyan-100/80 text-sm font-semibold mb-3 uppercase tracking-wider text-center">Ojo Izquierdo (OI)</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                        {['Esf', 'Cil', 'Eje'].map((label) => (
+                            <div key={label}>
+                                <label className="text-xs text-white/70 mb-1 block">{label}</label>
+                                <input
+                                    type="number" step="0.25"
+                                    name={`${prefix}_OI_${label}`}
+                                    value={getVal(`OI_${label}`) || ''}
+                                    onChange={onInputChange}
+                                    className={getInputClass(`OI_${label}`, true)}
+                                />
+                            </div>
+                        ))}
                     </div>
                     {prefix === 'lejos' && (
-                        <div className="mt-2">
-                            <label className="text-xs text-gray-400">Add</label>
+                        <div className="mt-3">
+                            <label className="text-xs text-white/70 mb-1 block">Add</label>
                             <input
                                 type="number" step="0.25"
                                 name={`${prefix}_OI_Add`}
@@ -147,10 +112,10 @@ export const OpticSection: React.FC<OpticSectionProps> = ({
                 </div>
             </div>
 
-            {/* SELECTORES DE TIPO (DINÁMICO) Y COLOR */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            {/* SELECTORES DE TIPO Y COLOR */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div>
-                    <label className="block text-sm text-gray-400 mb-1">Tipo de Cristal</label>
+                    <label className="block text-sm text-white font-medium mb-1">Tipo de Cristal</label>
                     <select
                         name={`${prefix}_Tipo`}
                         value={getVal('Tipo') || ''}
@@ -167,7 +132,7 @@ export const OpticSection: React.FC<OpticSectionProps> = ({
                 </div>
 
                 <div>
-                    <label className="block text-sm text-gray-400 mb-1">Color / Tratamiento</label>
+                    <label className="block text-sm text-white font-medium mb-1">Color / Tratamiento</label>
                     <select
                         name={`${prefix}_Color`}
                         value={getVal('Color') || ''}
@@ -183,13 +148,14 @@ export const OpticSection: React.FC<OpticSectionProps> = ({
                 </div>
 
                 <div>
-                    <label className="block text-sm text-gray-400 mb-1">DNP</label>
+                    <label className="block text-sm text-white font-medium mb-1">DNP</label>
                     <input
                         type="text"
                         name={`${prefix}_DNP`}
                         value={getVal('DNP') || ''}
                         onChange={onInputChange}
                         className={getInputClass('DNP')}
+                        placeholder="Distancia interpupilar"
                     />
                 </div>
             </div>

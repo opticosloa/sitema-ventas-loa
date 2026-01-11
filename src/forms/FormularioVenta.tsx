@@ -698,7 +698,7 @@ export const FormularioVenta: React.FC = () => {
             </button>
           </div>
 
-          <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 mt-4 flex items-center justify-between">
+          <div className="p-4 rounded-xl border border-blanco mt-4 flex items-center justify-between ">
             <label className="text-white font-bold">Precio Laboratorio / Cristales ($):</label>
             <input
               type="number"
@@ -712,7 +712,7 @@ export const FormularioVenta: React.FC = () => {
         </div>
 
         {/* SECTION: DISCOUNT & TOTAL (Shared) */}
-        <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 mt-4">
+        <div className="p-4 rounded-xl border border-blanco mt-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <label className="text-white font-bold">Descuento ($):</label>
@@ -743,7 +743,7 @@ export const FormularioVenta: React.FC = () => {
             </div>
             <div>
               <span className="text-xl text-white font-bold">Total a Pagar: </span>
-              <span className="text-2xl text-celeste font-bold">${totalVenta.toLocaleString()}</span>
+              <span className="text-2xl text-crema font-bold">${totalVenta.toLocaleString()}</span>
             </div>
           </div>
         </div>

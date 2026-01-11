@@ -20,7 +20,7 @@ export const ConsultaStock: React.FC = () => {
   const { data: products = [], isLoading, isSuccess } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
-      const { data } = await LOAApi.get<{ success: boolean; result: any }>('/api/products/all');
+      const { data } = await LOAApi.get<{ success: boolean; result: any }>('/api/products');
       const listaProductos = data.result?.rows || data.result;
       return Array.isArray(listaProductos) ? listaProductos : [];
     }

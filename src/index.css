@@ -7,6 +7,25 @@
   --color-blanco: #FFFFFF;
 }
 
+/* Inputs */
+.input {
+  @apply bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-celeste focus:border-celeste transition;
+}
+
+/* Botones */
+.btn-primary {
+  @apply bg-celeste text-negro font-semibold px-6 py-2 rounded-lg hover:bg-celeste/90 transition shadow-md;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition;
+}
+
+/* Cards */
+.card {
+  @apply bg-gray-800 border border-gray-700 rounded-xl shadow-lg;
+}
+
 @layer components {
   .input {
     @apply w-full rounded-md border border-gray-300 bg-crema text-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-celeste;
