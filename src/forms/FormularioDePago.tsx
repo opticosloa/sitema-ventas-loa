@@ -18,6 +18,28 @@ export const FormularioDePago: React.FC = () => {
   const [dniSearch, setDniSearch] = useState("");
   const [currentTotal, setCurrentTotal] = useState<number>(stateTotal ? parseFloat(stateTotal) : 0);
 
+  // User asked to "Add state for pointDevices and selectedDeviceId".
+  const [pointDevices, setPointDevices] = useState<any[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const { data } = await LOAApi.get('/api/payments/mercadopago/devices');
+        if (data.success && Array.isArray(data.result)) {
+          setPointDevices(data.result);
+          // Opcional: pre-seleccionar el primero si existe
+          if (data.result.length > 0) {
+            setSelectedDeviceId(data.result[0].id);
+          }
+        }
+      } catch (error) {
+        console.error("Error cargando dispositivos Point:", error);
+      }
+    };
+    fetchDevices();
+  }, []);
+
   // Sync with location state on mount
   useEffect(() => {
     const state = (location.state as any);
@@ -129,7 +151,6 @@ export const FormularioDePago: React.FC = () => {
   // Calculations
   const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
   const restante = Math.max(0, currentTotal - totalPagado);
-  // const puedeConfirmar = Math.abs(restante) < 0.01 || pagos.length > 0; // Allow partial payments confirmation if needed
 
   // Handlers
   const [mpModalOpen, setMpModalOpen] = useState(false);
@@ -204,15 +225,6 @@ export const FormularioDePago: React.FC = () => {
       if (data.success && data.result) {
         const { pagos: backendPagosList } = data.result;
 
-        // Logic: Has the paid amount increased to cover our mpAmount? 
-        // Or simply: Do we see the new payment in the list?
-        // Let's assume if backendPagado >= totalPagado (our local total including pending MP), it's done.
-        // But better: Just rely on fetching existing payments which we do next steps.
-
-        // If we are polling, we just want to know if "something happened". 
-        // Simplest check: if backendPagado > (totalPagado - mpAmount).
-        // Actually, let's just refresh the whole list.
-
         // REFRESH LIST
         if (Array.isArray(backendPagosList)) {
           const mapped: PagoParcial[] = backendPagosList.map((p: any) => ({
@@ -222,12 +234,7 @@ export const FormularioDePago: React.FC = () => {
             readonly: true
           }));
 
-          // Calculate total from mapped
           const newTotalPaid = mapped.reduce((acc, p) => acc + p.monto, 0);
-
-          // If newTotalPaid is greater than what we had before (excluding the pending MP which wasn't in list yet?),
-          // wait, we didn't add the pending MP to 'pagos' yet.
-          // So if newTotalPaid > totalPagado (current confirmed/local items), then we have success!
 
           if (newTotalPaid > totalPagado) {
             setPagos(mapped); // Update list
@@ -250,16 +257,11 @@ export const FormularioDePago: React.FC = () => {
     const newPayments = pagos.filter(p => !p.confirmed);
 
     if (newPayments.length === 0 && restante > 0.01) {
-      // If no new payments but still money due? 
-      // User can confirm manual payments.
-      // If totally due, and no payments added, alert.
       alert("Agregue un pago o verifique el monto.");
       return;
     }
 
     if (newPayments.length === 0 && restante <= 0.01) {
-      // Fully paid logic handled by 'Finalizar' button usually, but if user clicks submit?
-      // Just redirect.
       alert("Venta pagada correctamente.");
       navigate(`/ventas/${ventaId}`);
       return;
@@ -267,24 +269,20 @@ export const FormularioDePago: React.FC = () => {
 
     setLoading(true);
     try {
-
       const payload = {
         venta_id: ventaId,
         pagos: newPayments.map(p => ({
           metodo: p.metodo,
           monto: p.monto,
-          referencia: '' // Add refs if needed
+          referencia: ''
         }))
       };
 
       await LOAApi.post('/api/payments/manual', payload);
 
       alert('Pagos registrados correctamente');
-
-      // Refresh to confirm states
       fetchExistingPayments(ventaId!.toString());
-      setPagos([]); // Clear local provisional list? Or keep them and re-fetch?
-      // Better to fetch.
+      setPagos([]);
 
     } catch (error) {
       console.error(error);
@@ -294,9 +292,7 @@ export const FormularioDePago: React.FC = () => {
     }
   };
 
-
-
-  const handleStartMpFlow = async (type: 'QR' | 'POINT', amount: number) => {
+  const handleStartMpFlow = async (type: 'QR' | 'POINT', amount: number, deviceIdParam?: string) => {
     setLoading(true);
     try {
       if (type === 'QR') {
@@ -310,9 +306,15 @@ export const FormularioDePago: React.FC = () => {
           setAsyncPaymentStatus('SHOWING_QR');
         }
       } else {
+        // Usar el deviceId pasado por parámetro
+        if (!deviceIdParam) {
+          setLoading(false);
+          return alert("Error: Falta ID de dispositivo");
+        }
         await LOAApi.post('/api/payments/mercadopago/point', {
           venta_id: ventaId,
-          monto: amount
+          monto: amount,
+          device_id: deviceIdParam // Pass the selected device ID
         });
         setPointStatus("Enviado a terminal. Espere...");
         setAsyncPaymentStatus('WAITING_POINT');
@@ -505,6 +507,29 @@ export const FormularioDePago: React.FC = () => {
           <div className="bg-gray-800 p-6 rounded-lg max-w-sm w-full text-center">
             <h3 className="text-xl font-bold mb-4 text-white">Mercado Pago</h3>
             <p className="mb-6 text-gray-300">Monto: ${mpAmount.toLocaleString()}</p>
+
+            {/* Device Selector for Point */}
+            <div className="mb-4 text-left">
+              <label className="block text-sm text-gray-400 mb-1">Seleccionar Terminal Point:</label>
+              <select
+                value={selectedDeviceId}
+                onChange={(e) => setSelectedDeviceId(e.target.value)}
+                className="input w-full text-sm bg-gray-900"
+                disabled={pointDevices.length === 0}
+              >
+                {pointDevices.length === 0 ? (
+                  <option value="">Cargando / No hay dispositivos...</option>
+                ) : (
+                  pointDevices.map((device: any) => (
+                    // Muestra un nombre amigable si existe, o el ID cortado
+                    <option key={device.id} value={device.id}>
+                      {device.name || `Terminal ${device.id.slice(-6)}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
             <div className="flex gap-4 justify-center mb-6">
               <button
                 onClick={() => { setMpModalOpen(false); handleStartMpFlow('QR', mpAmount); }}
@@ -514,8 +539,14 @@ export const FormularioDePago: React.FC = () => {
                 <span className="text-sm font-bold">QR Pantalla</span>
               </button>
               <button
-                onClick={() => { setMpModalOpen(false); handleStartMpFlow('POINT', mpAmount); }}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-500 py-3 rounded-lg flex flex-col items-center gap-2"
+                onClick={() => {
+                  if (!selectedDeviceId) return alert("Seleccione una terminal");
+                  setMpModalOpen(false);
+                  handleStartMpFlow('POINT', mpAmount, selectedDeviceId);
+                }}
+                disabled={pointDevices.length === 0 || !selectedDeviceId}
+                className={`flex-1 py-3 rounded-lg flex flex-col items-center gap-2 ${pointDevices.length === 0 || !selectedDeviceId ? 'bg-gray-600 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-500'
+                  }`}
               >
                 <span className="text-2xl">💳</span>
                 <span className="text-sm font-bold">Terminal Point</span>
