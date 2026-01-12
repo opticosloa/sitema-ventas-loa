@@ -3,6 +3,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import LOAApi from '../api/LOAApi';
 import type { MetodoPago, PagoParcial } from '../types/Pago';
 import { QRCodeSVG } from 'qrcode.react';
+import { SupervisorAuthModal } from '../components/modals/SupervisorAuthModal';
+import { SalesItemsList, type CartItem } from './components/SalesItemsList';
 
 export const FormularioDePago: React.FC = () => {
   const { ventaId: paramVentaId } = useParams<{ ventaId: string }>();
@@ -17,6 +19,9 @@ export const FormularioDePago: React.FC = () => {
   const [saleItems, setSaleItems] = useState<any[]>([]);
   const [dniSearch, setDniSearch] = useState("");
   const [currentTotal, setCurrentTotal] = useState<number>(stateTotal ? parseFloat(stateTotal) : 0);
+
+  // States for Supervisor Auth
+  const [supervisorModalOpen, setSupervisorModalOpen] = useState(false);
 
   // User asked to "Add state for pointDevices and selectedDeviceId".
   const [pointDevices, setPointDevices] = useState<any[]>([]);
@@ -84,8 +89,9 @@ export const FormularioDePago: React.FC = () => {
           const mapped: PagoParcial[] = existingPagos.map((p: any) => ({
             metodo: p.metodo,
             monto: parseFloat(p.monto),
-            confirmed: true,
-            readonly: true
+            confirmed: p.estado === 'APROBADO' || p.estado === 'CONFIRMADO', // Solo confirmado si aprobado
+            readonly: true,
+            estado: p.estado // Guardamos estado para UI
           }));
           setPagos(mapped);
         }
@@ -133,7 +139,7 @@ export const FormularioDePago: React.FC = () => {
   };
 
   // State
-  const [pagos, setPagos] = useState<PagoParcial[]>([]);
+  const [pagos, setPagos] = useState<(PagoParcial & { estado?: string })[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Form State for new payment
@@ -149,7 +155,8 @@ export const FormularioDePago: React.FC = () => {
   ];
 
   // Calculations
-  const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
+  // Solo sumamos los confirmados para el "Pagado" real
+  const totalPagado = pagos.reduce((acc, p) => acc + (p.confirmed ? (Number(p.monto) || 0) : 0), 0);
   const restante = Math.max(0, currentTotal - totalPagado);
 
   // Handlers
@@ -168,14 +175,19 @@ export const FormularioDePago: React.FC = () => {
       return;
     }
 
-    setPagos([...pagos, { metodo: selectedMethod, monto: amount }]);
+    // Pagos manuales se asumen confirmados al agregarse temporalmente (hasta submit)
+    // Pero espera, el submit es el que los guarda.
+    // Mientras estén en local state antes de guardar, los tratamos como "por confirmar" pero visible en la lista?
+    // En la lógica anterior: onSubmit crea los manuales. 
+    // Aquí los agregamos a la lista local. UI debe mostrarlos.
+    setPagos([...pagos, { metodo: selectedMethod, monto: amount, confirmed: true, readonly: false }]); // Manuales nuevos asumimos 'confirmed' visualmente para restar
     // Reset inputs
     setSelectedMethod('');
     setAmountInput((restante - amount).toFixed(2));
   };
 
   const handleRemovePayment = (index: number) => {
-    if (pagos[index].readonly || pagos[index].confirmed) {
+    if (pagos[index].readonly || (pagos[index].confirmed && pagos[index].readonly)) { // Only block if DB confirmed
       alert("No se puede eliminar un pago ya confirmado.");
       return;
     }
@@ -227,20 +239,31 @@ export const FormularioDePago: React.FC = () => {
 
         // REFRESH LIST
         if (Array.isArray(backendPagosList)) {
-          const mapped: PagoParcial[] = backendPagosList.map((p: any) => ({
+          // Check if we have a NEW confirmed payment
+          const hasNewConfirmed = backendPagosList.some((p: any) =>
+            (p.estado === 'APROBADO' || p.estado === 'CONFIRMADO') &&
+            !pagos.some(local => local.confirmed && local.monto === parseFloat(p.monto) && local.metodo === p.metodo) // Weak check but sufficient for now
+          );
+
+          const mapped = backendPagosList.map((p: any) => ({
             metodo: p.metodo,
             monto: parseFloat(p.monto),
-            confirmed: true,
-            readonly: true
+            confirmed: p.estado === 'APROBADO' || p.estado === 'CONFIRMADO',
+            readonly: true,
+            estado: p.estado
           }));
 
-          const newTotalPaid = mapped.reduce((acc, p) => acc + p.monto, 0);
+          // Re-calculate totals from fresh data
+          const freshTotalPaid = mapped.reduce((acc: number, p: any) => acc + (p.confirmed ? p.monto : 0), 0);
 
-          if (newTotalPaid > totalPagado) {
+          if (freshTotalPaid > totalPagado || hasNewConfirmed) {
             setPagos(mapped); // Update list
             setAsyncPaymentStatus('IDLE');
             setLoading(false);
-            alert("¡Pago con Mercado Pago confirmado!");
+            // alert("¡Pago con Mercado Pago confirmado!"); // Optional, maybe intrusive in poll
+          } else {
+            // Just update list to show "Pendiente" status if changed
+            setPagos(mapped);
           }
         }
       }
@@ -254,7 +277,7 @@ export const FormularioDePago: React.FC = () => {
     if (loading) return;
 
     // Filter out already confirmed payments (MP, etc)
-    const newPayments = pagos.filter(p => !p.confirmed);
+    const newPayments = pagos.filter(p => !p.confirmed || !p.readonly);
 
     if (newPayments.length === 0 && restante > 0.01) {
       alert("Agregue un pago o verifique el monto.");
@@ -301,9 +324,20 @@ export const FormularioDePago: React.FC = () => {
           monto: amount,
           title: `Venta #${ventaId}`
         });
-        if (data.qr_data) {
+
+        if (data.status === 'no_content') {
+          alert("Orden enviada a Mercado Pago. Verifique la pantalla del QR Smart/PosNet.");
+          setAsyncPaymentStatus('WAITING_POINT'); // Reuse waiting status or creating a new one? WAITING_POINT is fine or IDLE but polling?
+          // If it returns 204, it means the QR is on the device. We should poll for payment status.
+          // Let's use WAITING_POINT visual style but maybe change text?
+          // For now, WAITING_POINT is okay, it shows spinner.
+        } else if (data.qr_data) {
           setQrData(data.qr_data);
           setAsyncPaymentStatus('SHOWING_QR');
+        } else {
+          // Fallback if success but no QR and not no_content (?)
+          alert("Solicitud enviada. Esperando confirmación...");
+          setAsyncPaymentStatus('WAITING_POINT');
         }
       } else {
         // Usar el deviceId pasado por parámetro
@@ -320,8 +354,30 @@ export const FormularioDePago: React.FC = () => {
         setAsyncPaymentStatus('WAITING_POINT');
       }
     } catch (e) {
-      console.error(e);
-      alert("Error iniciando pago MP");
+      console.error("MP Start Flow Error:", e);
+      alert("Error iniciando pago MP. Intente nuevamente.");
+      // Limpieza de estados
+      setAsyncPaymentStatus('IDLE');
+      setLoading(false);
+      setQrData(null);
+    }
+  };
+
+  const handleSupervisorSuccess = async (supervisorName: string) => {
+    try {
+      setLoading(true);
+      // 1. Update observation (Audit)
+      await LOAApi.put(`/api/sales/${ventaId}/observation`, {
+        observation: `AUTORIZADO RETIRO SIN PAGO POR: ${supervisorName}`
+      });
+
+      // 2. Navigate to result (Pending status is implicit)
+      navigate(`/ventas/resultado?venta_id=${ventaId}`);
+
+    } catch (error) {
+      console.error("Error updating sale observation:", error);
+      alert("Error al registrar autorización. Intente nuevamente.");
+    } finally {
       setLoading(false);
     }
   };
@@ -331,6 +387,16 @@ export const FormularioDePago: React.FC = () => {
       setAmountInput(restante.toFixed(2));
     }
   }, [restante]);
+
+  // Transform saleItems for display
+  const displayItems: CartItem[] = saleItems.map(item => ({
+    producto: {
+      nombre: item.producto_nombre || item.producto?.nombre || 'Producto',
+      ...item.producto // Keep other props if available
+    } as any,
+    cantidad: Number(item.cantidad),
+    subtotal: Number(item.subtotal || (item.precio_unitario * item.cantidad))
+  }));
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 text-blanco">
@@ -363,19 +429,13 @@ export const FormularioDePago: React.FC = () => {
             <span className="font-bold">Venta #{ventaId}</span>
             <span className="text-xl font-bold text-celeste">${currentTotal.toLocaleString()}</span>
           </div>
-          {saleItems.length > 0 ? (
-            <div className="text-sm text-gray-300">
-              <ul className="list-disc pl-5">
-                {saleItems.map((item, idx) => (
-                  <li key={idx}>
-                    {item.cantidad}x {item.producto_nombre || item.producto?.nombre || 'Item'} - ${item.subtotal || item.precio_unitario * item.cantidad}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500">Sin detalles de items...</p>
-          )}
+
+          {/* Reuse SalesItemsList in ReadOnly Mode */}
+          <SalesItemsList
+            items={displayItems}
+            onItemsChange={() => { }}
+            readonly={true}
+          />
         </div>
       )}
 
@@ -414,14 +474,14 @@ export const FormularioDePago: React.FC = () => {
                       <span className="text-2xl">{metodos.find(m => m.id === pago.metodo)?.icon || '💰'}</span>
                       <div>
                         <p className="font-medium">{metodos.find(m => m.id === pago.metodo)?.label || pago.metodo}</p>
-                        <p className="text-xs text-gray-400">
-                          {pago.confirmed ? 'CONFIRMADO' : 'Pendiente'}
+                        <p className={`text-xs ${pago.confirmed ? 'text-green-400' : 'text-yellow-500'}`}>
+                          {pago.confirmed ? 'CONFIRMADO' : (pago.estado || 'Pendiente / Local')}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-bold text-lg">${(pago.monto || 0).toLocaleString()}</span>
-                      {!pago.readonly && (
+                      {!pago.readonly && ( // Only allow remove if not DB record (or implement DELETE logic)
                         <button
                           onClick={() => handleRemovePayment(idx)}
                           className="text-red-400 hover:text-red-300 transition p-1"
@@ -478,28 +538,63 @@ export const FormularioDePago: React.FC = () => {
             <button
               type="button"
               onClick={handleAddPayment}
-              disabled={!selectedMethod || parseFloat(amountInput) <= 0}
-              className="btn-secondary w-full mb-auto"
+              disabled={!selectedMethod || parseFloat(amountInput) <= 0 || currentTotal <= 0}
+              className={`btn-secondary w-full mb-auto ${currentTotal <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Agregar Pago
             </button>
 
             <hr className="border-gray-700 my-6" />
 
-            <button
-              onClick={onSubmit}
-              disabled={loading} // Allow confirm even if partial? Maybe. "puedeConfirmar" logic was stricter.
-              className={`w-full py-3 rounded-lg font-bold text-lg transition-all ${!loading
-                ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50'
-                : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                }`}
-            >
-              {loading ? 'Procesando...' : 'Finalizar Venta'}
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setSupervisorModalOpen(true)}
+                disabled={loading || currentTotal <= 0}
+                className={`w-full py-3 rounded-lg font-bold text-lg transition-all ${!loading && currentTotal > 0
+                  ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-lg'
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  }`}
+              >
+                Pagar al Retirar (Requiere Auth)
+              </button>
+
+              <button
+                onClick={onSubmit}
+                disabled={loading || currentTotal <= 0} // Allow confirm even if partial? Maybe. "puedeConfirmar" logic was stricter.
+                className={`w-full py-3 rounded-lg font-bold text-lg transition-all ${!loading && currentTotal > 0
+                  ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50'
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  }`}
+              >
+                {loading ? 'Procesando...' : 'Finalizar Venta'}
+              </button>
+            </div>
 
           </div>
         </div>
       </div>
+
+      {/* Supervisor Modal */}
+      <SupervisorAuthModal
+        isOpen={supervisorModalOpen}
+        onClose={() => setSupervisorModalOpen(false)}
+        onSuccess={handleSupervisorSuccess}
+        actionName="Autorizar Retiro Sin Pago"
+      />
+
+      {/* Warning if total is 0 */}
+      {currentTotal <= 0 && (
+        <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-6 flex items-center gap-3">
+          <span className="text-3xl">⚠️</span>
+          <div>
+            <h3 className="font-bold text-lg">Error en la Venta</h3>
+            <p>El total de la venta es $0. No se puede procesar el pago ni autorizar retiro.</p>
+            <button onClick={() => navigate('/ventas')} className="underline mt-1 hover:text-white">
+              Volver y revisar items
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MP Modal */}
       {mpModalOpen && (

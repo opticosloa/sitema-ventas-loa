@@ -13,9 +13,10 @@ interface SalesItemsListProps {
     items: CartItem[];
     onItemsChange: (items: CartItem[]) => void;
     dolarRate?: number;
+    readonly?: boolean;
 }
 
-export const SalesItemsList: React.FC<SalesItemsListProps> = ({ items, onItemsChange, dolarRate = 0 }) => {
+export const SalesItemsList: React.FC<SalesItemsListProps> = ({ items, onItemsChange, dolarRate = 0, readonly = false }) => {
     // Autocomplete State
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState<Producto[]>([]);
@@ -96,56 +97,58 @@ export const SalesItemsList: React.FC<SalesItemsListProps> = ({ items, onItemsCh
                 </h3>
             </div>
 
-            {/* Buscador Autocomplete */}
-            <div className="relative mb-6">
-                <div className="relative">
-                    <input
-                        type="text"
-                        className="w-full bg-slate-50 text-slate-900 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="Buscar producto por nombre o ID..."
-                        value={searchTerm}
-                        onChange={(e) => handleSearch(e.target.value)}
-                    />
-                    <Search className="absolute left-3 top-3 text-slate-400" size={18} />
-                    {isSearching && (
-                        <div className="absolute right-3 top-3 w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                    )}
-                </div>
-
-                {/* Dropdown de Resultados */}
-                {showResults && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-slate-200 z-50 max-h-64 overflow-y-auto">
-                        {results.length > 0 ? (
-                            results.map((prod) => (
-                                <button
-                                    key={prod.producto_id}
-                                    type="button"
-                                    onClick={() => addItemToCart(prod)}
-                                    className="w-full text-left px-4 py-3 hover:bg-cyan-50 border-b border-slate-100 last:border-0 flex justify-between items-center transition-colors"
-                                >
-                                    <div>
-                                        <div className="font-bold text-slate-800">{prod.nombre}</div>
-                                        <div className="text-xs text-slate-500">Stock: {prod.stock} | Ubicación: {prod.ubicacion || 'N/A'}</div>
-                                    </div>
-                                    <div className="text-cyan-600 font-bold">
-                                        {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(getPrice(prod))}
-                                    </div>
-                                </button>
-                            ))
-                        ) : (
-                            <div className="p-4 text-center text-slate-500 text-sm">
-                                No se encontraron productos.
-                            </div>
+            {/* Buscador Autocomplete - Hidden in Readonly */}
+            {!readonly && (
+                <div className="relative mb-6">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            className="w-full bg-slate-50 text-slate-900 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-cyan-500"
+                            placeholder="Buscar producto por nombre o ID..."
+                            value={searchTerm}
+                            onChange={(e) => handleSearch(e.target.value)}
+                        />
+                        <Search className="absolute left-3 top-3 text-slate-400" size={18} />
+                        {isSearching && (
+                            <div className="absolute right-3 top-3 w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
                         )}
                     </div>
-                )}
-            </div>
+
+                    {/* Dropdown de Resultados */}
+                    {showResults && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-slate-200 z-50 max-h-64 overflow-y-auto">
+                            {results.length > 0 ? (
+                                results.map((prod) => (
+                                    <button
+                                        key={prod.producto_id}
+                                        type="button"
+                                        onClick={() => addItemToCart(prod)}
+                                        className="w-full text-left px-4 py-3 hover:bg-cyan-50 border-b border-slate-100 last:border-0 flex justify-between items-center transition-colors"
+                                    >
+                                        <div>
+                                            <div className="font-bold text-slate-800">{prod.nombre}</div>
+                                            <div className="text-xs text-slate-500">Stock: {prod.stock} | Ubicación: {prod.ubicacion || 'N/A'}</div>
+                                        </div>
+                                        <div className="text-cyan-600 font-bold">
+                                            {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(getPrice(prod))}
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="p-4 text-center text-slate-500 text-sm">
+                                    No se encontraron productos.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Tabla de Carrito */}
             <div className="mt-6 overflow-x-auto">
                 {items.length === 0 ? (
                     <div className="text-center py-8 text-gray-400 bg-white/5 rounded-lg border border-dashed border-gray-600/50">
-                        No hay productos agregados al carrito de venta directa.
+                        {readonly ? 'No hay detalles de items disponibles.' : 'No hay productos agregados al carrito de venta directa.'}
                     </div>
                 ) : (
                     <table className="w-full text-left border-collapse">
@@ -155,7 +158,7 @@ export const SalesItemsList: React.FC<SalesItemsListProps> = ({ items, onItemsCh
                                 <th className="p-3 font-semibold text-blanco text-right">Precio Unit.</th>
                                 <th className="p-3 font-semibold text-blanco text-center">Cant.</th>
                                 <th className="p-3 font-semibold text-blanco text-right">Subtotal</th>
-                                <th className="p-3 font-semibold text-blanco text-center">Acción</th>
+                                {!readonly && <th className="p-3 font-semibold text-blanco text-center">Acción</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700/50">
@@ -177,18 +180,20 @@ export const SalesItemsList: React.FC<SalesItemsListProps> = ({ items, onItemsCh
                                     <td className="p-3 text-right text-green-400 font-bold">
                                         {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(item.subtotal || 0)}
                                     </td>
-                                    <td className="p-3 text-center">
-                                        <button
-                                            onClick={() => {
-                                                const newItems = items.filter((_, i) => i !== index);
-                                                onItemsChange(newItems);
-                                            }}
-                                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10 p-2 rounded-full transition-colors"
-                                            title="Eliminar ítem"
-                                        >
-                                            ❌
-                                        </button>
-                                    </td>
+                                    {!readonly && (
+                                        <td className="p-3 text-center">
+                                            <button
+                                                onClick={() => {
+                                                    const newItems = items.filter((_, i) => i !== index);
+                                                    onItemsChange(newItems);
+                                                }}
+                                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 p-2 rounded-full transition-colors"
+                                                title="Eliminar ítem"
+                                            >
+                                                ❌
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>

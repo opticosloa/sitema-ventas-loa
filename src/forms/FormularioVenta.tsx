@@ -15,16 +15,14 @@ import { FrameSection } from "./components/FrameSection";
 import { SalesItemsList, type CartItem } from "./components/SalesItemsList";
 import { SupervisorAuthModal } from "../components/modals/SupervisorAuthModal";
 import { PrescriptionCapture } from "./components/PrescriptionCapture";
-import { useReactToPrint } from 'react-to-print';
-import { TicketVenta } from "../ventas/components/TicketVenta";
 
 const initialForm: FormValues = {
   clienteName: "",
   clienteApellido: "",
   clienteDomicilio: "",
   clienteFechaRecibido: new Date().toISOString().slice(0, 16),
-  clienteTelefono: "",
   clienteFechaEntrega: new Date().toISOString().slice(0, 10),
+  clienteTelefono: "",
   clienteDNI: "",
   clienteNameVendedor: "",
   clienteObraSocial: "",
@@ -73,29 +71,6 @@ export const FormularioVenta: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [cliente, setCliente] = useState<Cliente | null>(null);
 
-  // Ticket Printing
-  const ticketRef = React.useRef<HTMLDivElement>(null);
-  const [ticketData, setTicketData] = useState<any>(null);
-  const [isPrinting, setIsPrinting] = useState(false);
-
-  const handlePrint = useReactToPrint({
-    contentRef: ticketRef,
-    onAfterPrint: () => {
-      setIsPrinting(false);
-      // Navigate after printing (or if canceled)
-      if (ticketData) {
-        navigate('pago', { state: { ventaId: ticketData.venta.venta_id, total: ticketData.venta.total } });
-      }
-    },
-    onPrintError: () => setIsPrinting(false)
-  });
-
-  useEffect(() => {
-    if (ticketData) {
-      setIsPrinting(true);
-      handlePrint();
-    }
-  }, [ticketData]);
 
   // Crystal Data
   const [availableCrystals, setAvailableCrystals] = useState<any[]>([]);
@@ -719,30 +694,8 @@ export const FormularioVenta: React.FC = () => {
         alert("Presupuesto guardado correctamente.");
         navigate('/ventas');
       } else {
-        // Prepare Ticket Data for printing
-        setTicketData({
-          venta: {
-            venta_id: ventaId,
-            total: totalVenta,
-            descuento: isDiscountAuthorized ? discount : 0,
-            cotizacion_dolar: dolarRate
-          },
-          detalles: cart.map(item => ({
-            producto: item.producto,
-            cantidad: item.cantidad,
-            subtotal: ((item.producto as any).precio_usd && dolarRate > 0 ? Number((item.producto as any).precio_usd) * dolarRate : Number((item.producto as any).precio_venta)) * item.cantidad
-          })),
-          receta: createPrescription ? {
-            ...formState,
-          } : null,
-          cliente: {
-            nombre: clienteName,
-            apellido: clienteApellido,
-            telefono: clienteTelefono
-          }
-        });
-
-        // Navigation will happen in onAfterPrint
+        // Navigate directly to payment, bypassing auto-print
+        navigate('pago', { state: { ventaId: ventaId, total: totalVenta } });
       }
 
     } catch (error: any) {
@@ -952,23 +905,12 @@ export const FormularioVenta: React.FC = () => {
           <button
             type="submit"
             className="btn-primary"
-            disabled={loading || isPrinting}
+            disabled={loading}
           >
-            {loading || isPrinting ? <span className="animate-spin mr-2">⏳</span> : 'Finalizar e Imprimir'}
+            {loading ? <span className="animate-spin mr-2">⏳</span> : 'Finalizar Venta'}
           </button>
         </div>
       </form>
-
-      {/* Hidden Ticket Component */}
-      <div style={{ display: 'none' }}>
-        <TicketVenta
-          ref={ticketRef}
-          venta={ticketData?.venta}
-          detalles={ticketData?.detalles || []}
-          receta={ticketData?.receta}
-          cliente={ticketData?.cliente}
-        />
-      </div>
     </div>
   );
 };
