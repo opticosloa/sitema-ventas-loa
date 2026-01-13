@@ -324,7 +324,8 @@ export const FormularioDePago: React.FC = () => {
         // Use the new Dynamic QR endpoint
         const { data } = await LOAApi.post('/api/payments/mercadopago/dynamic', {
           total: amount,
-          sucursal_id: 'SUCURSAL_DEFAULT' // You might want to make this dynamic later if needed
+          sucursal_id: 'SUCURSAL_DEFAULT',
+          venta_id: ventaId
         });
 
         if (data.success && data.result?.qr_data) {
