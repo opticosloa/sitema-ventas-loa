@@ -707,7 +707,6 @@ export const FormularioVenta: React.FC = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(e)
     processSale(false);
   };
 
