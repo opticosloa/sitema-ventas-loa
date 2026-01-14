@@ -49,7 +49,8 @@ export const ListaEmpleados: React.FC = () => {
         fecha_nacimiento: '',
         cuenta_corriente: 0,
         email: '',
-        password: ''
+        password: '',
+        max_descuento: 0
       });
     },
     onError: (error) => {
@@ -83,7 +84,8 @@ export const ListaEmpleados: React.FC = () => {
     fecha_nacimiento: '',
     cuenta_corriente: 0,
     email: '',
-    password: ''
+    password: '',
+    max_descuento: 0
   });
 
   // Filtrado de empleados (nombre, apellido, cuit, telefono)
@@ -147,7 +149,7 @@ export const ListaEmpleados: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewEmpleado(prev => ({ ...prev, [name]: name === 'cuit' || name === 'telefono' || name === 'cuenta_corriente' ? parseInt(value) || 0 : value }));
+    setNewEmpleado(prev => ({ ...prev, [name]: name === 'cuit' || name === 'telefono' || name === 'cuenta_corriente' || name === 'max_descuento' ? (parseFloat(value) || 0) : value }));
   };
 
   // keyboard handler for list items
@@ -305,6 +307,11 @@ export const ListaEmpleados: React.FC = () => {
               <h3 className="text-xl font-semibold">{selected.nombre} {selected.apellido}</h3>
               <div className="text-sm text-gray-600">CUIT: {selected.cuit} • Rol: {selected.rol}</div>
               <div className="text-xs text-gray-500 mt-1">Dirección: {selected.direccion}</div>
+              {selected.max_descuento !== undefined && (
+                <div className="mt-2 inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                  Desc. Max: {selected.max_descuento}%
+                </div>
+              )}
             </header>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,6 +482,30 @@ export const ListaEmpleados: React.FC = () => {
                   required
                 />
               </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-black">Max. Descuento (%)</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="max_descuento"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={newEmpleado.max_descuento ?? 0}
+                    onChange={(e) => {
+                      let val = parseFloat(e.target.value);
+                      if (val < 0) val = 0;
+                      if (val > 100) val = 100;
+                      setNewEmpleado({ ...newEmpleado, max_descuento: val });
+                    }}
+                    className="input w-full pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                </div>
+              </label>
+
 
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-black">Cuenta Corriente</span>

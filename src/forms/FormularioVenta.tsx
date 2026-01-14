@@ -64,7 +64,7 @@ const initialForm: FormValues = {
 };
 
 export const FormularioVenta: React.FC = () => {
-  const { nombre, apellido } = useAuthStore();
+  const { nombre, apellido, max_descuento = 0 } = useAuthStore();
   const { formState, onInputChange, onResetForm, setFieldValue } = useForm(initialForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
@@ -117,8 +117,8 @@ export const FormularioVenta: React.FC = () => {
   const [isDiscountAuthorized, setIsDiscountAuthorized] = useState(false);
   const [showSupervisorModal, setShowSupervisorModal] = useState(false);
 
-  // Actualizá el useMemo del total
-  const totalVenta = React.useMemo(() => {
+  // 1. Calculamos Subtotal Bruto (Sin Descuentos)
+  const subtotalBruto = React.useMemo(() => {
     const retailTotal = cart.reduce((acc, item) => {
       // Calcular precio en ARS al vuelo
       const prod = item.producto as any;
@@ -130,9 +130,35 @@ export const FormularioVenta: React.FC = () => {
     }, 0);
     const frameTotal = formState.armazon ? armazonPrecio : 0;
 
-    // SUMAMOS CRISTALES y RESTAMOS DESCUENTO
-    return retailTotal + frameTotal + cristalesPrecio - (isDiscountAuthorized ? discount : 0);
-  }, [cart, armazonPrecio, formState.armazon, cristalesPrecio, discount, isDiscountAuthorized, dolarRate]);
+    return retailTotal + frameTotal + cristalesPrecio;
+  }, [cart, armazonPrecio, formState.armazon, cristalesPrecio, dolarRate]);
+
+  // 2. Total Final (Restando Descuento si está autorizado)
+  const totalVenta = React.useMemo(() => {
+    const final = subtotalBruto - (isDiscountAuthorized ? discount : 0);
+    return Math.max(0, final);
+  }, [subtotalBruto, discount, isDiscountAuthorized]);
+
+  // 3. Efecto para Validar Descuento Automáticamente al cambiar valores
+  useEffect(() => {
+    if (subtotalBruto > 0 && discount > 0) {
+      const porcentajeSolicitado = (discount / subtotalBruto) * 100;
+      const maxAllowed = max_descuento || 0;
+
+      if (porcentajeSolicitado <= maxAllowed) {
+        setIsDiscountAuthorized(true);
+      } else {
+        // Solo desautorizamos si la regla no se cumple.
+        // Si ya estaba autorizado manualmente (por supervisor), esto lo pisará si se recalcula.
+        // PERO: Si el supervisor autoriza, no cambiamos los montos, por ende este efecto NO DEBERÍA correr (deps: subtotal, discount).
+        // Si el usuario cambia el monto luego de autorizar, está BIEN que se revoque.
+        setIsDiscountAuthorized(false);
+      }
+    } else if (discount === 0) {
+      setIsDiscountAuthorized(true);
+    }
+  }, [discount, subtotalBruto, max_descuento]);
+
 
   const navigate = useNavigate();
 
@@ -667,7 +693,6 @@ export const FormularioVenta: React.FC = () => {
           descuento: isDiscountAuthorized ? discount : 0
         };
 
-        console.log("🚀 Payload Final:", JSON.stringify(payload, null, 2));
         const res = await LOAApi.post('/api/prescriptions', payload);
         ventaId = res.data.venta_id;
 
@@ -695,7 +720,7 @@ export const FormularioVenta: React.FC = () => {
         navigate('/ventas');
       } else {
         // Navigate directly to payment, bypassing auto-print
-        navigate('pago', { state: { ventaId: ventaId, total: totalVenta } });
+        navigate('/pago', { state: { ventaId: ventaId, total: totalVenta } });
       }
 
     } catch (error: any) {
@@ -828,27 +853,41 @@ export const FormularioVenta: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <label className="text-white font-bold">Descuento ($):</label>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="number"
-                  min="0"
-                  disabled={!isDiscountAuthorized}
-                  className={`input w-32 text-right ${!isDiscountAuthorized ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  placeholder="0.00"
-                  value={discount || ''}
-                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                />
-                {!isDiscountAuthorized ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowSupervisorModal(true)}
-                    className="btn-warning hover:opacity-75 text-xs py-1 px-2"
-                  >
-                    🔓 Autorizar
-                  </button>
-                ) : (
-                  <span className="text-green-400 text-xs font-bold border border-green-500 px-2 py-1 rounded">
-                    ✅ Autorizado
+              <div className="flex flex-col gap-1 items-end">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    className={`input w-32 text-right ${isDiscountAuthorized ? 'border-green-500' : ''}`}
+                    placeholder="0.00"
+                    value={discount || ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      if (val > subtotalBruto) {
+                        setDiscount(subtotalBruto);
+                      } else {
+                        setDiscount(val);
+                      }
+                    }}
+
+                  />
+                  {!isDiscountAuthorized && discount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowSupervisorModal(true)}
+                      className="btn-warning hover:opacity-75 text-xs py-1 px-2 animate-pulse"
+                    >
+                      🔓 Requiere Autorización
+                    </button>
+                  ) : (discount > 0 && (
+                    <span className="text-green-400 text-xs font-bold border border-green-500 px-2 py-1 rounded">
+                      Autorizado
+                    </span>
+                  ))}
+                </div>
+                {!isDiscountAuthorized && discount > 0 && (
+                  <span className="text-xs text-red-400">
+                    Excede tu máximo de {(max_descuento || 0)}%
                   </span>
                 )}
               </div>

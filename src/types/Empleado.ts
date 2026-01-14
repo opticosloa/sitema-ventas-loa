@@ -12,4 +12,5 @@ export interface Empleado {
   email?: string; // Optional for list, required for creation
   password?: string; // Optional for list, required for creation
   sucursal_id?: number;
+  max_descuento?: number;
 }

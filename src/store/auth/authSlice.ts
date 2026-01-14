@@ -11,6 +11,7 @@ const initialState: AuthState = {
     sucursal_id: null,
     sucursal_name: null,
     errorMessage: null,
+    max_descuento: 0,
 }
 
 export const authSlice = createSlice({
@@ -27,6 +28,7 @@ export const authSlice = createSlice({
             state.sucursal_id = payload.sucursal_id;
             state.sucursal_name = payload.sucursal_name;
             state.errorMessage = null;
+            state.max_descuento = payload.max_descuento || 0;
         },
         logout: (state, { payload }) => {
             state.status = 'not-authenticated';
@@ -38,6 +40,7 @@ export const authSlice = createSlice({
             state.sucursal_id = null;
             state.sucursal_name = null;
             state.errorMessage = payload?.errorMessage;
+            state.max_descuento = 0;
         },
         checkingCredential: (state) => {
             state.status = 'checking';

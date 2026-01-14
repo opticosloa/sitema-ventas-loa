@@ -33,6 +33,7 @@ export const AppRouter = () => {
                 <Route path="empleados" element={<ListaEmpleados />} />
                 <Route path="taller" element={<TicketList />} />
                 <Route path="devoluciones" element={<DevolucionesPage />} />
+                <Route path="nueva-venta/pago" element={<FormularioDePago />} />
 
                 {/* NUEVAS RUTAS ADMIN */}
                 <Route path="configuracion" element={<ConfiguracionPage />} />

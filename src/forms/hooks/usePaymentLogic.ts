@@ -275,6 +275,19 @@ export const usePaymentLogic = (): UsePaymentLogicReturn => {
 
                 // REFRESH LIST
                 if (Array.isArray(backendPagosList)) {
+
+                    const pagoRechazado = backendPagosList.find((p: any) =>
+                        p.metodo === 'MP' &&
+                        p.estado === 'RECHAZADO' &&
+                        parseFloat(p.monto) === mpAmount // mpAmount es el estado local del monto que intentas cobrar
+                    );
+
+                    if (pagoRechazado && asyncPaymentStatus !== 'IDLE') {
+                        setAsyncPaymentStatus('IDLE'); // Cerramos el modal de espera
+                        setLoading(false);
+                        alert("❌ El pago fue RECHAZADO por Mercado Pago. Intente con otro medio.");
+                        return;
+                    }
                     // Check if we have a NEW confirmed payment
                     backendPagosList.some((p: any) =>
                         (p.estado === 'APROBADO' || p.estado === 'CONFIRMADO') &&

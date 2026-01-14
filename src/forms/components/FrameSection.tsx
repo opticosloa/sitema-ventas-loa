@@ -1,6 +1,8 @@
 import React from 'react';
 import type { FormValues } from '../../types/ventasFormTypes';
-import { ProductSearch } from './ProductSearch';
+import { ProductTypeAutocomplete } from './ProductTypeAutocomplete'; // Import new component
+
+
 
 interface FrameSectionProps {
     formState: FormValues;
@@ -24,8 +26,9 @@ export const FrameSection: React.FC<FrameSectionProps> = ({
     };
 
     const renderFrameInput = (label: string, fieldName: keyof FormValues) => (
-        <ProductSearch
+        <ProductTypeAutocomplete
             label={label}
+            type="ARMAZON" // Specify the type to filter by
             value={formState[fieldName] as string}
             onChange={(val) => handleProductChange(fieldName, val)}
             onProductSelect={(product) => {
@@ -38,9 +41,10 @@ export const FrameSection: React.FC<FrameSectionProps> = ({
         />
     );
 
+
     return (
         <section className="bg-opacity-10 border border-blanco rounded-xl p-4 mt-4">
-            <h3 className="text-blanco font-medium mb-3">Armazones (Opcional)</h3>
+            <h3 className="text-blanco font-medium mb-3">Armazones</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {renderFrameInput(formState.armazon ? "Armazón *" : "Armazón", "armazon")}
             </div>

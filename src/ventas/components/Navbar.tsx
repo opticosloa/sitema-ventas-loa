@@ -85,7 +85,7 @@ export const Navbar = () => {
                     Taller
                   </Link>
                   <Link
-                    to="/empleados"
+                    to="/empleado"
                     className="text-white font-medium hover:text-gray-200 transition-colors px-3 py-2 rounded-md hover:bg-white/10"
                   >
                     Empleados

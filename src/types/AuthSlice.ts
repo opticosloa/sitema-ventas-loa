@@ -10,4 +10,5 @@ export interface AuthState {
     sucursal_name: string | null;
     errorMessage: string | null;
     role: string | null;
+    max_descuento?: number;
 }
