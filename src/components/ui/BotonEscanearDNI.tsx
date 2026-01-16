@@ -54,7 +54,9 @@ export const BotonEscanearDNI: React.FC<BotonEscanearDNIProps> = ({ onScanComple
                     },
                     (errorMessage) => {
                         // Error callback (scanning failure per frame is common, ignore unless critical)
-                        // console.log(errorMessage); 
+                        if (!errorMessage.includes("NotFoundException")) {
+                            console.warn("⚠️ Incidencia del scanner:", errorMessage);
+                        }
                     }
                 );
 
