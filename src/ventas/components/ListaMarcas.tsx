@@ -40,9 +40,9 @@ export const ListaMarcas: React.FC = () => {
         setSearchTerm(e.target.value);
     };
 
-    const filteredBrands = brands.filter(b =>
-        b.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredBrands = Array.isArray(brands)
+        ? brands.filter(b => b.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+        : [];
 
     const handleOpenModal = (brand?: Brand) => {
         if (brand) {
